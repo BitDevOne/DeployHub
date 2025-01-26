@@ -15,6 +15,11 @@ $XamlMain = @"
                     <ListBox x:Name="TaskSequenceList" HorizontalAlignment="Left" Margin="10,45,0,0" VerticalAlignment="Top" Width="360" Height="200"/>
                 </Grid>
             </TabItem>
+            <TabItem Header="Applications">
+                <Grid>
+                    
+                </Grid>
+            </TabItem>
             <TabItem Header="Monitoring">
                 <Grid>
                     
