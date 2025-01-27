@@ -4,7 +4,7 @@
 $XamlMain = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Aplikacja GUI" Height="400" Width="470">
+        Title="Deploy HUB" Height="400" Width="470">
     <Grid>
         <TabControl>
             <TabItem Header="Task Sequences">
