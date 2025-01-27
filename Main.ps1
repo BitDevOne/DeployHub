@@ -4,7 +4,7 @@
 $XamlMain = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Aplikacja GUI" Height="Auto" Width="400">
+        Title="Aplikacja GUI" Height="400" Width="470">
     <Grid>
         <TabControl>
             <TabItem Header="Task Sequences">
@@ -17,7 +17,21 @@ $XamlMain = @"
             </TabItem>
             <TabItem Header="Applications">
                 <Grid>
-                    
+                    <!-- Define columns in the grid -->
+                    <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Winget Section -->
+                    <Label Content="Winget:" Grid.Column="0"/>
+                    <Button x:Name="WingetAddButoon" Content="Add New Winget Application" HorizontalAlignment="Left" Margin="10,30,0,0" VerticalAlignment="Top" Width="200"/>
+                    <ListBox x:Name="WingetApplicationsList" HorizontalAlignment="Left" Margin="10,65,0,0" VerticalAlignment="Top" Width="200" Height="200"/>
+
+                    <!-- Chocolatey Section -->
+                    <Label Content="Chocolatey:" Grid.Column="1" Margin="20,0,0,0"/>
+                    <Button x:Name="ChocoAddButoon" Content="Add New Chocolatey Application" Grid.Column="1" Margin="30,30,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" Width="200"/>
+                    <ListBox x:Name="ChocoApplicationsList" Grid.Column="1" Margin="30,65,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" Width="200" Height="200"/>
                 </Grid>
             </TabItem>
             <TabItem Header="Monitoring">
