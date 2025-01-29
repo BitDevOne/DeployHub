@@ -27,11 +27,13 @@ $XamlMain = @"
                     <Label Content="Winget:" Grid.Column="0"/>
                     <Button x:Name="WingetAddButoon" Content="Add New Winget Application" HorizontalAlignment="Left" Margin="10,30,0,0" VerticalAlignment="Top" Width="200"/>
                     <ListBox x:Name="WingetApplicationsList" HorizontalAlignment="Left" Margin="10,65,0,0" VerticalAlignment="Top" Width="200" Height="200"/>
+                    <Button x:Name="WingetRemoveButton" Content="Remove Selected Winget Application" HorizontalAlignment="Left" Margin="10,280,0,0" VerticalAlignment="Top" Width="200"/>
 
                     <!-- Chocolatey Section -->
                     <Label Content="Chocolatey:" Grid.Column="1" Margin="20,0,0,0"/>
                     <Button x:Name="ChocoAddButoon" Content="Add New Chocolatey Application" Grid.Column="1" Margin="30,30,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" Width="200"/>
                     <ListBox x:Name="ChocoApplicationsList" Grid.Column="1" Margin="30,65,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" Width="200" Height="200"/>
+                    <Button x:Name="ChocoRemoveButton" Content="Remove Selected Chocolatey App" Grid.Column="1" Margin="30,280,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" Width="200"/>
                 </Grid>
             </TabItem>
             <TabItem Header="Monitoring">
@@ -58,6 +60,9 @@ $AddButton = $WindowMain.FindName("AddButton")
 $EditButton = $WindowMain.FindName("EditButton")
 $RemoveButton = $WindowMain.FindName("RemoveButton")
 $TaskSequenceList = $WindowMain.FindName("TaskSequenceList")
+$WingetAddButoon = $WindowMain.FindName("WingetAddButoon")
+$WingetRemoveButton = $WindowMain.FindName("WingetRemoveButton")
+$WingetApplicationsList = $WindowMain.FindName("WingetApplicationsList")
 
 # Lokalizacja folderów Task Sequences
 $TaskSequencesPath = "$PSScriptRoot\TaskSequences"
@@ -89,7 +94,7 @@ $EditButton.Add_Click({
         if (Test-Path $XmlFilePath) {
             & "$PSScriptRoot\Scripts\EditTaskSequence.ps1" -FolderPath $FolderPath -XmlFilePath $XmlFilePath
         } else {
-            [System.Windows.MessageBox]::Show("Plik config.xml nie istnieje w wybranym folderze.", "Błąd", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error)
+            [System.Windows.MessageBox]::Show("Plik TaskSequences.xml nie istnieje w wybranym folderze.", "Błąd", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error)
         }
     }
 })
@@ -108,6 +113,41 @@ $RemoveButton.Add_Click({
 
 # Inicjalne wypełnienie listy
 Refresh_TaskSequenceList
+
+
+#Zakładka Applications
+
+# Lokalizacja folderów Task Sequences
+$ApplicationsPath = "$PSScriptRoot\Config\Applications"
+
+# Funkcja odświeżania listy folderów
+function Refresh_WingetApplicationsList {
+    $WingetApplicationsList.Items.Clear()
+    Get-ChildItem -Path $ApplicationsPath -File -Filter "*.xml" | ForEach-Object {
+        $WingetApplicationsList.Items.Add($_.BaseName)
+    }
+}
+
+# Obsługa przycisku "Add New"
+$WingetAddButoon.Add_Click({
+    & "$PSScriptRoot\Scripts\WingetAppSearch.ps1" -FolderPath $ApplicationsPath
+    Refresh_WingetApplicationsList
+})
+
+# Obsługa przycisku "Remove"
+$WingetRemoveButton.Add_Click({
+    if ($WingetApplicationsList.SelectedIndex -ne -1) {
+        $SelectedFolder = $WingetApplicationsList.SelectedItem.ToString()
+        $FolderPath = Join-Path -Path $ApplicationsPath -ChildPath "$SelectedFolder.xml"
+        if (Test-Path $FolderPath) {
+            Remove-Item -Path $FolderPath -Recurse -Force
+            Refresh_WingetApplicationsList
+        }
+    }
+})
+
+# Inicjalne wypełnienie listy
+Refresh_WingetApplicationsList
 
 # Wyświetlenie głównego okna
 $WindowMain.ShowDialog()

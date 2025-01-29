@@ -1,7 +1,9 @@
-function Search-App {
-    param (
-        [string]$SearchTerm
+   param (
+    [string]$FolderPath
     )
+
+    # Zapyta użytkownika o aplikację do wyszukania
+    $searchTerm = Read-Host "Podaj nazwę aplikacji do wyszukania"
 
     # Wyszukiwanie aplikacji za pomocą winget
     $results = winget search $SearchTerm | ForEach-Object {
@@ -33,7 +35,7 @@ function Search-App {
     Write-Host "ID: $($selection.Id)"
 
     # Ścieżka do pliku XML
-    $outputPath = "./Config/Applications/$($selection.Name).xml"
+    $outputPath = "$FolderPath/$($selection.Name).xml"
 
     # Sprawdzenie, czy plik XML istnieje
     if (Test-Path $outputPath) {
@@ -60,10 +62,4 @@ function Search-App {
             Write-Host "Błąd podczas zapisu do pliku XML: $_"
         }
     }
-}
 
-# Zapyta użytkownika o aplikację do wyszukania
-$searchTerm = Read-Host "Podaj nazwę aplikacji do wyszukania"
-
-# Uruchomienie funkcji wyszukiwania
-Search-App -SearchTerm $searchTerm
