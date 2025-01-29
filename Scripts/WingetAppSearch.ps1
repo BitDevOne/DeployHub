@@ -33,59 +33,32 @@ function Search-App {
     Write-Host "ID: $($selection.Id)"
 
     # Ścieżka do pliku XML
-    $outputPath = "./SelectedApps.xml"
+    $outputPath = "./Config/Applications/$($selection.Name).xml"
 
-    # Wczytanie lub utworzenie pliku XML
-    [xml]$xml
+    # Sprawdzenie, czy plik XML istnieje
     if (Test-Path $outputPath) {
-        try {
-            $xml = [xml](Get-Content $outputPath)
-        } catch {
-            Write-Host "Błąd podczas wczytywania pliku XML: $_"
-            return
-        }
+        Write-Host "Plik XML dla aplikacji $($selection.Name) już istnieje."
     } else {
-        $xml = New-Object -TypeName System.Xml.XmlDocument
-        $root = $xml.CreateElement("Applications")
+        # Tworzenie nowego dokumentu XML
+        $xml = New-Object System.Xml.XmlDocument
+        $root = $xml.CreateElement("Application")
         $xml.AppendChild($root) | Out-Null
-    }
 
-    # Upewnienie się, że element Applications istnieje i jest węzłem
-    if (-not $xml.DocumentElement -or $xml.DocumentElement.LocalName -ne "Applications") {
-        $root = $xml.CreateElement("Applications")
-        $xml.AppendChild($root) | Out-Null
-    }
+        $nameNode = $xml.CreateElement("Name")
+        $nameNode.InnerText = $selection.Name
+        $root.AppendChild($nameNode) | Out-Null
 
-    # Sprawdzenie, czy aplikacja już istnieje
-    $appExists = $xml.SelectNodes("//Applications/Application") | Where-Object {
-        $_.Name -eq $selection.Name -and $_.ID -eq $selection.Id
-    }
+        $idNode = $xml.CreateElement("ID")
+        $idNode.InnerText = $selection.Id
+        $root.AppendChild($idNode) | Out-Null
 
-    if ($appExists) {
-        Write-Host "Aplikacja już istnieje w pliku XML. Nie dodano ponownie."
-        return
-    }
-
-    # Dodanie nowego wpisu
-    $appNode = $xml.CreateElement("Application")
-
-    $nameNode = $xml.CreateElement("Name")
-    $nameNode.InnerText = $selection.Name
-    $appNode.AppendChild($nameNode) | Out-Null
-
-    $idNode = $xml.CreateElement("ID")
-    $idNode.InnerText = $selection.Id
-    $appNode.AppendChild($idNode) | Out-Null
-
-    # Dodanie nowego węzła do Applications
-    $xml.DocumentElement.AppendChild($appNode) | Out-Null
-
-    # Zapis pliku XML
-    try {
-        $xml.Save($outputPath)
-        Write-Host "Dodano nową aplikację do pliku XML: $outputPath"
-    } catch {
-        Write-Host "Błąd podczas zapisu do pliku XML: $_"
+        # Zapis pliku XML
+        try {
+            $xml.Save($outputPath)
+            Write-Host "Utworzono i zapisano nowy plik XML dla aplikacji: $outputPath"
+        } catch {
+            Write-Host "Błąd podczas zapisu do pliku XML: $_"
+        }
     }
 }
 
