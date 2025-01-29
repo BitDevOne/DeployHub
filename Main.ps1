@@ -1,6 +1,6 @@
 ﻿Add-Type -AssemblyName PresentationFramework
 
-# Główne GUI
+# Main GUI
 $XamlMain = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -25,13 +25,13 @@ $XamlMain = @"
 
                     <!-- Winget Section -->
                     <Label Content="Winget:" Grid.Column="0"/>
-                    <Button x:Name="WingetAddButoon" Content="Add New Winget Application" HorizontalAlignment="Left" Margin="10,30,0,0" VerticalAlignment="Top" Width="200"/>
+                    <Button x:Name="WingetAddButton" Content="Add New Winget Application" HorizontalAlignment="Left" Margin="10,30,0,0" VerticalAlignment="Top" Width="200"/>
                     <ListBox x:Name="WingetApplicationsList" HorizontalAlignment="Left" Margin="10,65,0,0" VerticalAlignment="Top" Width="200" Height="200"/>
                     <Button x:Name="WingetRemoveButton" Content="Remove Selected Winget Application" HorizontalAlignment="Left" Margin="10,280,0,0" VerticalAlignment="Top" Width="200"/>
 
                     <!-- Chocolatey Section -->
                     <Label Content="Chocolatey:" Grid.Column="1" Margin="20,0,0,0"/>
-                    <Button x:Name="ChocoAddButoon" Content="Add New Chocolatey Application" Grid.Column="1" Margin="30,30,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" Width="200"/>
+                    <Button x:Name="ChocoAddButton" Content="Add New Chocolatey Application" Grid.Column="1" Margin="30,30,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" Width="200"/>
                     <ListBox x:Name="ChocoApplicationsList" Grid.Column="1" Margin="30,65,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" Width="200" Height="200"/>
                     <Button x:Name="ChocoRemoveButton" Content="Remove Selected Chocolatey App" Grid.Column="1" Margin="30,280,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" Width="200"/>
                 </Grid>
@@ -55,22 +55,25 @@ $XamlMain = @"
 $ReaderMain = (New-Object System.Xml.XmlNodeReader $XamlReaderMain)
 $WindowMain = [Windows.Markup.XamlReader]::Load($ReaderMain)
 
-# Referencje do kontrolek
+# References to controls
 $AddButton = $WindowMain.FindName("AddButton")
 $EditButton = $WindowMain.FindName("EditButton")
 $RemoveButton = $WindowMain.FindName("RemoveButton")
 $TaskSequenceList = $WindowMain.FindName("TaskSequenceList")
-$WingetAddButoon = $WindowMain.FindName("WingetAddButoon")
+$WingetAddButton = $WindowMain.FindName("WingetAddButton")
 $WingetRemoveButton = $WindowMain.FindName("WingetRemoveButton")
 $WingetApplicationsList = $WindowMain.FindName("WingetApplicationsList")
+$ChocoAddButton = $WindowMain.FindName("ChocoAddButton")
+$ChocoRemoveButton = $WindowMain.FindName("ChocoRemoveButton")
+$ChocoApplicationsList = $WindowMain.FindName("ChocoApplicationsList")
 
-# Lokalizacja folderów Task Sequences
+# Task Sequences folder location
 $TaskSequencesPath = "$PSScriptRoot\TaskSequences"
 if (-not (Test-Path $TaskSequencesPath)) {
     New-Item -ItemType Directory -Path $TaskSequencesPath | Out-Null
 }
 
-# Funkcja odświeżania listy folderów
+# Function to refresh the folder list
 function Refresh_TaskSequenceList {
     $TaskSequenceList.Items.Clear()
     Get-ChildItem -Path $TaskSequencesPath -Directory | ForEach-Object {
@@ -78,13 +81,13 @@ function Refresh_TaskSequenceList {
     }
 }
 
-# Obsługa przycisku "Add New"
+# "Add New" button event handler
 $AddButton.Add_Click({
     & "$PSScriptRoot\Scripts\AddTaskSequence.ps1" -TaskSequencesPath $TaskSequencesPath
     Refresh_TaskSequenceList
 })
 
-# Obsługa przycisku "Edit"
+# "Edit" button event handler
 $EditButton.Add_Click({
     if ($TaskSequenceList.SelectedIndex -ne -1) {
         $SelectedFolder = $TaskSequenceList.SelectedItem.ToString()
@@ -94,12 +97,12 @@ $EditButton.Add_Click({
         if (Test-Path $XmlFilePath) {
             & "$PSScriptRoot\Scripts\EditTaskSequence.ps1" -FolderPath $FolderPath -XmlFilePath $XmlFilePath
         } else {
-            [System.Windows.MessageBox]::Show("Plik TaskSequences.xml nie istnieje w wybranym folderze.", "Błąd", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error)
+            [System.Windows.MessageBox]::Show("The file TaskSequences.xml does not exist in the selected folder.", "Error", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error)
         }
     }
 })
 
-# Obsługa przycisku "Remove"
+# "Remove" button event handler
 $RemoveButton.Add_Click({
     if ($TaskSequenceList.SelectedIndex -ne -1) {
         $SelectedFolder = $TaskSequenceList.SelectedItem.ToString()
@@ -111,34 +114,34 @@ $RemoveButton.Add_Click({
     }
 })
 
-# Inicjalne wypełnienie listy
+# Initial population of the list
 Refresh_TaskSequenceList
 
 
-#Zakładka Applications
+# Applications Tab
 
-# Lokalizacja folderów Task Sequences
-$ApplicationsPath = "$PSScriptRoot\Config\Applications"
+# Winget applications folder location
+$WingetApplicationsPath = "$PSScriptRoot\Config\Applications\Winget"
 
-# Funkcja odświeżania listy folderów
+# Function to refresh the Winget applications list
 function Refresh_WingetApplicationsList {
     $WingetApplicationsList.Items.Clear()
-    Get-ChildItem -Path $ApplicationsPath -File -Filter "*.xml" | ForEach-Object {
+    Get-ChildItem -Path $WingetApplicationsPath -File -Filter "*.xml" | ForEach-Object {
         $WingetApplicationsList.Items.Add($_.BaseName)
     }
 }
 
-# Obsługa przycisku "Add New"
-$WingetAddButoon.Add_Click({
-    & "$PSScriptRoot\Scripts\WingetAppSearch.ps1" -FolderPath $ApplicationsPath
+# "Add New" button event handler for Winget
+$WingetAddButton.Add_Click({
+    & "$PSScriptRoot\Scripts\WingetAppSearch.ps1" -FolderPath $WingetApplicationsPath
     Refresh_WingetApplicationsList
 })
 
-# Obsługa przycisku "Remove"
+# "Remove" button event handler for Winget
 $WingetRemoveButton.Add_Click({
     if ($WingetApplicationsList.SelectedIndex -ne -1) {
         $SelectedFolder = $WingetApplicationsList.SelectedItem.ToString()
-        $FolderPath = Join-Path -Path $ApplicationsPath -ChildPath "$SelectedFolder.xml"
+        $FolderPath = Join-Path -Path $WingetApplicationsPath -ChildPath "$SelectedFolder.xml"
         if (Test-Path $FolderPath) {
             Remove-Item -Path $FolderPath -Recurse -Force
             Refresh_WingetApplicationsList
@@ -146,8 +149,40 @@ $WingetRemoveButton.Add_Click({
     }
 })
 
-# Inicjalne wypełnienie listy
+# Initial population of the Winget applications list
 Refresh_WingetApplicationsList
 
-# Wyświetlenie głównego okna
+# Chocolatey applications folder location
+$ChocoApplicationsPath = "$PSScriptRoot\Config\Applications\Choco"
+
+# Function to refresh the Chocolatey applications list
+function Refresh_ChocoApplicationsList {
+    $ChocoApplicationsList.Items.Clear()
+    Get-ChildItem -Path $ChocoApplicationsPath -File -Filter "*.xml" | ForEach-Object {
+        $ChocoApplicationsList.Items.Add($_.BaseName)
+    }
+}
+
+# "Add New" button event handler for Chocolatey
+$ChocoAddButton.Add_Click({
+    & "$PSScriptRoot\Scripts\ChocoAppSearch.ps1" -FolderPath $ChocoApplicationsPath
+    Refresh_ChocoApplicationsList
+})
+
+# "Remove" button event handler for Chocolatey
+$ChocoRemoveButton.Add_Click({
+    if ($ChocoApplicationsList.SelectedIndex -ne -1) {
+        $SelectedFolder = $ChocoApplicationsList.SelectedItem.ToString()
+        $FolderPath = Join-Path -Path $ChocoApplicationsPath -ChildPath "$SelectedFolder.xml"
+        if (Test-Path $FolderPath) {
+            Remove-Item -Path $FolderPath -Recurse -Force
+            Refresh_ChocoApplicationsList
+        }
+    }
+})
+
+# Initial population of the Chocolatey applications list
+Refresh_ChocoApplicationsList
+
+# Display the main window
 $WindowMain.ShowDialog()

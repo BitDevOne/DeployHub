@@ -1,4 +1,4 @@
-﻿param (
+param (
     [string]$FolderPath
 )
 
@@ -7,7 +7,7 @@ Add-Type -AssemblyName PresentationFramework
 # GUI definition in XAML
 $Xaml = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        Title="Application Search"
+        Title="Application Search (Chocolatey)"
         Height="200" Width="400" ResizeMode="NoResize"
         WindowStartupLocation="CenterScreen">
     <Grid>
@@ -63,14 +63,12 @@ if ($null -eq $global:SearchTerm) {
     exit
 }
 
-# Search for applications using winget
-$results = winget search $global:SearchTerm | ForEach-Object {
-    if ($_ -match "^\S+\s+\S+\s+.*") {
-        $fields = ($_ -split '\s{2,}')
+# Search for applications using Chocolatey
+$results = choco search $global:SearchTerm --limit-output | ForEach-Object {
+    if ($_ -match "^(?<Name>[^|]+)\|(?<Version>[^|]+)$") {
         [PSCustomObject]@{
-            Name    = $fields[0]
-            Id      = $fields[1]
-            Version = if ($fields.Count -ge 3) { $fields[2] } else { "" }
+            Name    = $matches.Name.Trim()
+            Version = $matches.Version.Trim()
         }
     }
 } | Where-Object { $_ -ne $null }
@@ -93,7 +91,7 @@ $outputPath = "$FolderPath\$($selection.Name).xml"
 
 # Check if the XML file already exists
 if (Test-Path $outputPath) {
-    [System.Windows.MessageBox]::Show("The application $($selection.Name) has already been added", "Success", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+    [System.Windows.MessageBox]::Show("The application $($selection.Name) has already been added", "Information", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
 } else {
     # Create a new XML document
     $xml = New-Object System.Xml.XmlDocument
@@ -104,9 +102,9 @@ if (Test-Path $outputPath) {
     $nameNode.InnerText = $selection.Name
     $root.AppendChild($nameNode) | Out-Null
 
-    $idNode = $xml.CreateElement("ID")
-    $idNode.InnerText = $selection.Id
-    $root.AppendChild($idNode) | Out-Null
+    $versionNode = $xml.CreateElement("Version")
+    $versionNode.InnerText = $selection.Version
+    $root.AppendChild($versionNode) | Out-Null
 
     # Save XML file
     try {

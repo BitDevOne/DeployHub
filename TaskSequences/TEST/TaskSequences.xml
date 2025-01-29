@@ -1,0 +1,8 @@
+<TaskSequence>
+  <Step>
+    <Number>1</Number>
+    <Type>Run Command Line</Type>
+    <Name>DEV</Name>
+    <Command>DEV</Command>
+  </Step>
+</TaskSequence>
