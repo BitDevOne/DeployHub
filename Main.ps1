@@ -118,7 +118,7 @@ $RemoveButton.Add_Click({
 Refresh_TaskSequenceList
 
 
-# Applications Tabtest
+# Applications Tab
 
 # Winget applications folder location
 $WingetApplicationsPath = "$PSScriptRoot\Config\Applications\Winget"
