@@ -7,7 +7,7 @@ param (
 <Window
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    Title="MDT OS Importer" Height="350" Width="450" ResizeMode="NoResize" WindowStartupLocation="CenterScreen">
+    Title="OS Importer" Height="350" Width="450" ResizeMode="NoResize" WindowStartupLocation="CenterScreen">
     <Grid Background="#F0F0F0">
         
         <!-- Step 1: Select ISO File -->

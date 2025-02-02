@@ -13,6 +13,7 @@ $xaml = @"
     <DockPanel>
         <Menu DockPanel.Dock="Top">
             <MenuItem Header="_Add">
+                <MenuItem Header="Install OS" Name="InstallOSMenu"/>
                 <MenuItem Header="Run Command Line" Name="RunCommandLineMenu"/>
                 <MenuItem Header="Run PowerShell Script" Name="RunPowershellScriptMenu"/>
                 <MenuItem Header="Install Application" Name="InstallApplicationMenu"/>

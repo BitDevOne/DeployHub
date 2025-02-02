@@ -110,7 +110,7 @@ function Refresh_TaskSequenceList {
 
 # "Add New" button event handler
 $AddButton.Add_Click({
-    & "$PSScriptRoot\Scripts\AddTaskSequence.ps1" -TaskSequencesPath $TaskSequencesPath
+    & "$PSScriptRoot\Scripts\AddTaskSequence.ps1" -TaskSequencesPath $TaskSequencesPath -OSxmlFilePath $xmlOSFilePath
     Refresh_TaskSequenceList
 })
 

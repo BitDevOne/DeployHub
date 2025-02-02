@@ -3,6 +3,6 @@
     <Number>1</Number>
     <Type>Apply System Image</Type>
     <Name>Install OS</Name>
-    <FileName></FileName>
+    <FileName>3 - Windows 11 Pro</FileName>
   </Step>
 </TaskSequence>
