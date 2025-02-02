@@ -19,6 +19,7 @@ param (
                         <TextBox x:Name="textBoxISO" Width="280" Margin="0,5,5,5"/>
                         <Button x:Name="buttonBrowse" Content="Browse" Width="80" Margin="0,5,5,5"/>
                     </DockPanel>
+                    <Label Content="This may take a while..." FontStyle="Italic" Foreground="Gray"/>
                     <Button x:Name="buttonNext" Content="Next" HorizontalAlignment="Left" Width="80" Margin="0,5,5,5"/>
                 </StackPanel>
             </GroupBox>
@@ -41,6 +42,7 @@ param (
                 <StackPanel>
                     <Label Content="File Name:"/>
                     <TextBox x:Name="textBoxFileName" Width="300" Margin="0,5,0,5"/>
+                    <Label Content="This may take a while..." FontStyle="Italic" Foreground="Gray"/>
                     <Button x:Name="buttonConfirm" Content="Confirm" HorizontalAlignment="Left" Width="80" Margin="0,5,5,5"/>
                 </StackPanel>
             </GroupBox>
