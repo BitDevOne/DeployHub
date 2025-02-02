@@ -47,6 +47,10 @@ $xaml = @"
                 <TextBox Name="CommandName" Margin="0,5"/>
                 <Label Content="Command:" Name="CommandLabel" Visibility="Collapsed"/>
                 <TextBox Name="CommandContent" Margin="0,5" AcceptsReturn="True" Visibility="Collapsed"/>
+                <Label Content="OS Version:" Name="OsVersionLabel" Visibility="Collapsed"/>
+                <ComboBox Name="OsVersionDropdown" Margin="0,5" Visibility="Collapsed"/>
+                <Label Content="Application:" Name="ApplicationLabel" Visibility="Collapsed"/>
+                <ComboBox Name="ApplicationDropdown" Margin="0,5" Visibility="Collapsed"/>
                 <Button Content="Save" Name="SaveButton" Margin="0,10,0,0"/>
             </StackPanel>
         </Grid>
@@ -72,9 +76,14 @@ $cancelButton = $window.FindName("CancelButton")
 $runCommandLineMenu = $window.FindName("RunCommandLineMenu")
 $runPowershellScriptMenu = $window.FindName("RunPowershellScriptMenu")
 $installApplicationMenu = $window.FindName("InstallApplicationMenu")
+$installOSMenu = $window.FindName("InstallOSMenu")
 $removeMenu = $window.FindName("RemoveMenu")
 $upMenu = $window.FindName("UPMenu")
 $downMenu = $window.FindName("DOWNMenu")
+$osVersionLabel = $window.FindName("OsVersionLabel")
+$osVersionDropdown = $window.FindName("OsVersionDropdown")
+$applicationLabel = $window.FindName("ApplicationLabel")
+$applicationDropdown = $window.FindName("ApplicationDropdown")
 
 # Sprawdzenie, czy plik XML istnieje
 if (-not (Test-Path $XmlFilePath)) {
@@ -85,6 +94,21 @@ if (-not (Test-Path $XmlFilePath)) {
 # Wczytanie pliku XML
 $xmlContent = [xml](Get-Content $XmlFilePath)
 
+# Wczytanie dostępnych wersji OS z XML (jeśli istnieją w XML)
+$osVersions = $xmlContent.TaskSequence.Step | Where-Object { $_.Type -eq "Apply System Image" } | Select-Object -ExpandProperty FileName -Unique
+if ($osVersions.Count -eq 0) {
+    $osVersions = @("Windows 10", "Windows 11", "Windows Server 2019")  # Domyślne wartości
+}
+
+# Wypełnienie dropdowna OS
+$osVersionDropdown.Items.Clear()
+$osVersions | ForEach-Object { $osVersionDropdown.Items.Add($_) }
+
+# Ustawienie domyślnej wartości jako pierwsza z listy
+if ($osVersionDropdown.Items.Count -gt 0) {
+    $osVersionDropdown.SelectedItem = $osVersionDropdown.Items[0]
+}
+
 # Struktura danych do przechowywania hierarchii komend
 $rootItems = New-Object System.Collections.ObjectModel.ObservableCollection[PSCustomObject]
 $xmlContent.TaskSequence.Step | ForEach-Object {
@@ -93,6 +117,7 @@ $xmlContent.TaskSequence.Step | ForEach-Object {
         Type = $_.Type
         Name = $_.Name
         Command = $_.Command
+        OSVersion = if ($_.FileName) { $_.FileName } else { "" } # Pobieramy FileName jako OSVersion
     })
 }
 # Funkcja do odświeżania TreeView
@@ -181,6 +206,17 @@ $installApplicationMenu.Add_Click({
     RefreshTreeView
 })
 
+$installOSMenu.Add_Click({
+    $newItem = [PSCustomObject]@{
+        Description = "Install OS"
+        Type = "Apply System Image"
+        Name = "Install OS"
+        OSVersion = ""
+    }
+    $rootItems.Add($newItem)
+    RefreshTreeView
+})
+
 $removeMenu.Add_Click({
     if ($commandTree.SelectedItem -ne $null) {
         $selectedItem = $commandTree.SelectedItem
@@ -220,14 +256,36 @@ $commandTree.add_SelectedItemChanged({
         $commandType.Text = $selectedItem.Type
         $commandName.Text = $selectedItem.Name
 
+        # Ukryj wszystkie dodatkowe pola
+        $commandLabel.Visibility = "Collapsed"
+        $commandContent.Visibility = "Collapsed"
+        $osVersionLabel.Visibility = "Collapsed"
+        $osVersionDropdown.Visibility = "Collapsed"
+        $applicationLabel.Visibility = "Collapsed"
+        $applicationDropdown.Visibility = "Collapsed"
+
+        # Pokaż odpowiednie pola na podstawie typu
         if ($selectedItem.Type -eq "Run Command Line" -or $selectedItem.Type -eq "Run PowerShell Script") {
             $commandContent.Text = $selectedItem.Command
             $commandLabel.Visibility = "Visible"
             $commandContent.Visibility = "Visible"
-        } else {
-            $commandContent.Text = ""
-            $commandLabel.Visibility = "Collapsed"
-            $commandContent.Visibility = "Collapsed"
+        } elseif ($selectedItem.Type -eq "Apply System Image") {
+            $osVersionLabel.Visibility = "Visible"
+            $osVersionDropdown.Visibility = "Visible"
+            # Jeśli `OSVersion` istnieje w kroku, ustaw jako domyślnie wybrany
+            if ($selectedItem.PSObject.Properties['OSVersion']) {
+                if ($osVersionDropdown.Items.Contains($selectedItem.OSVersion)) {
+                    $osVersionDropdown.SelectedItem = $selectedItem.OSVersion
+                } else {
+                    # Jeśli `OSVersion` nie pasuje do listy, wybierz pierwszą dostępną opcję
+                    if ($osVersionDropdown.Items.Count -gt 0) {
+                        $osVersionDropdown.SelectedItem = $osVersionDropdown.Items[0]
+                    }
+                }
+            }
+        } elseif ($selectedItem.Type -eq "Install Application") {
+            $applicationLabel.Visibility = "Visible"
+            $applicationDropdown.Visibility = "Visible"
         }
 
         $detailsPanel.Visibility = "Visible"
@@ -241,9 +299,15 @@ $saveButton.Add_Click({
     if ($commandTree.SelectedItem -ne $null) {
         $selectedItem = $commandTree.SelectedItem.Tag
         $selectedItem.Name = $commandName.Text
+        
         if ($selectedItem.Type -eq "Run Command Line" -or $selectedItem.Type -eq "Run PowerShell Script") {
             $selectedItem.Command = $commandContent.Text
+        } elseif ($selectedItem.Type -eq "Apply System Image") {
+            $selectedItem.OSVersion = $osVersionDropdown.SelectedItem.Content
+        } elseif ($selectedItem.Type -eq "Install Application") {
+            $selectedItem.Application = $applicationDropdown.SelectedItem.Content
         }
+
         RefreshTreeView
     }
 })

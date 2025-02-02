@@ -3,6 +3,16 @@
     <Number>1</Number>
     <Type>Apply System Image</Type>
     <Name>Install OS</Name>
-    <FileName>3 - Windows 11 Pro</FileName>
+  </Step>
+  <Step>
+    <Number>2</Number>
+    <Type>Run Command Line</Type>
+    <Name>New Command Line Step</Name>
+    <Command>qweq</Command>
+  </Step>
+  <Step>
+    <Number>3</Number>
+    <Type>Apply System Image</Type>
+    <Name>Install OS</Name>
   </Step>
 </TaskSequence>
