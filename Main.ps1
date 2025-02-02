@@ -36,6 +36,30 @@ $XamlMain = @"
                     <Button x:Name="ChocoRemoveButton" Content="Remove Selected Chocolatey App" Grid.Column="1" Margin="30,280,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" Width="200"/>
                 </Grid>
             </TabItem>
+            <TabItem Header="Operating System">
+                <Grid Margin="10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Etykieta -->
+                    <Label Content="List of Imported Systems:" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Margin="5"/>
+
+                    <!-- Lista systemów -->
+                    <ListBox x:Name="ImportedSystemList" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Margin="5" Height="250" VerticalAlignment="Top"/>
+
+                    <!-- Przyciski -->
+                    <Button x:Name="ImportOperatingSystem" Content="Import Operating System" Grid.Row="2" Grid.Column="0" Margin="5" Width="200" HorizontalAlignment="Left"/>
+                    <Button x:Name="RemoveOperatingSystem" Content="Remove Selected Operating System" Grid.Row="2" Grid.Column="1" Margin="5" Width="200" HorizontalAlignment="Right"/>
+                </Grid>
+            </TabItem>
+
             <TabItem Header="Monitoring">
                 <Grid>
                     
@@ -66,6 +90,9 @@ $WingetApplicationsList = $WindowMain.FindName("WingetApplicationsList")
 $ChocoAddButton = $WindowMain.FindName("ChocoAddButton")
 $ChocoRemoveButton = $WindowMain.FindName("ChocoRemoveButton")
 $ChocoApplicationsList = $WindowMain.FindName("ChocoApplicationsList")
+$ImportedSystemList = $WindowMain.FindName("ImportedSystemList")
+$ImportOperatingSystem = $WindowMain.FindName("ImportOperatingSystem")
+$RemoveOperatingSystem = $WindowMain.FindName("RemoveOperatingSystem")
 
 # Task Sequences folder location
 $TaskSequencesPath = "$PSScriptRoot\TaskSequences"
@@ -183,6 +210,86 @@ $ChocoRemoveButton.Add_Click({
 
 # Initial population of the Chocolatey applications list
 Refresh_ChocoApplicationsList
+
+# Operating System Tab
+
+# Path to os xml file
+$xmlOSFilePath = "$PSScriptRoot\Config\Operating Systems\Operating_Systems.xml"
+
+# Path to os import folder
+
+$ImportOSPath = "$PSScriptRoot\Operating Systems"
+
+# Load System list from xml
+function Refresh_OSList {
+    [xml]$xmlDataOS = Get-Content $xmlOSFilePath
+    $ImportedSystemList.Items.Clear()
+    
+    foreach ($os in $xmlDataOS.OSChoices.OS) {
+        $ImportedSystemList.Items.Add("$($os.Name)")
+    }
+}
+
+# Import button event handler
+$ImportOperatingSystem.Add_Click({
+    & "$PSScriptRoot\Scripts\OSImport.ps1" -xmlFolderPath $xmlOSFilePath -OSFolderPath $ImportOSPath
+    Refresh_OSList
+})
+
+# Remove Button event handler
+$RemoveOperatingSystem.Add_Click({
+    $SelectedItemOS = $ImportedSystemList.SelectedItem
+    if (-not $SelectedItemOS) {
+        [System.Windows.MessageBox]::Show("Please select an OS to remove.", "Error", "OK", "Error")
+        return
+    }
+    
+    # Pobranie nazwy wybranego systemu operacyjnego i usunięcie zbędnych spacji
+    $osName = $SelectedItemOS.Trim()
+
+    # Wczytanie XML i znalezienie elementu do usunięcia
+    [xml]$xmlDataOS = Get-Content $xmlOSFilePath
+    $osList = $xmlDataOS.OSChoices.OS  # Pobieramy listę elementów
+
+    # Znalezienie elementu na podstawie nazwy
+    $osToRemove = $osList | Where-Object { $_.Name -eq $osName }
+
+    if ($osToRemove) {
+        # Pobranie ścieżki pliku do usunięcia
+        $osPath = $osToRemove.Path
+
+        # Sprawdzenie, czy element rzeczywiście istnieje w XML
+        if ($osToRemove.ParentNode -ne $null) {
+            # Usunięcie elementu XML
+            $osToRemove.ParentNode.RemoveChild($osToRemove) | Out-Null  
+
+            # Zapisanie zmian do pliku XML
+            $xmlDataOS.Save($xmlOSFilePath)
+
+            # Sprawdzenie, czy plik istnieje i usunięcie go
+            if (Test-Path $osPath) {
+                try {
+                    Remove-Item -Path $osPath -Force -ErrorAction Stop
+                    [System.Windows.MessageBox]::Show("Operating System and associated file removed successfully.", "Success", "OK", "Information")
+                } catch {
+                    [System.Windows.MessageBox]::Show("Failed to remove OS file: $_", "Error", "OK", "Error")
+                }
+            } else {
+                [System.Windows.MessageBox]::Show("Operating System entry removed from XML, but file not found.", "Warning", "OK", "Warning")
+            }
+
+            Refresh_OSList
+        } else {
+            [System.Windows.MessageBox]::Show("ParentNode is null. OS not removed.", "Error", "OK", "Error")
+        }
+    } else {
+        [System.Windows.MessageBox]::Show("Operating System not found.", "Error", "OK", "Error")
+    }
+})
+
+
+# Initial population of OS list
+Refresh_OSList
 
 # Display the main window
 $WindowMain.ShowDialog()

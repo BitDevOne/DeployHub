@@ -1,3 +1,7 @@
+param (
+    [string]$xmlFolderPath,
+    [string]$OSFolderPath
+)
 # Definicja XAML dla GUI
 [xml]$xaml = @"
 <Window
@@ -122,7 +126,7 @@ $buttonNext.Add_Click({
 # Funkcja do przejścia do kroku 3
 $buttonImport.Add_Click({
     $global:selectedVersion = $comboBoxVersion.SelectedItem
-    Write-Log "Wybrana wersja systemu: $global:selectedVersion"
+    #Write-Log "Wybrana wersja systemu: $global:selectedVersion"
 
     if (-not $global:selectedVersion) {
         [System.Windows.MessageBox]::Show("Nie wybrano wersji systemu!", "Błąd")
@@ -139,24 +143,24 @@ $buttonImport.Add_Click({
 })
 
 # Ścieżka do logu
-$logPath = "C:\Users\TheMr\Downloads\TEST\import_log.txt"
+#$logPath = "import_log.txt"
 
 # Funkcja do logowania
-function Write-Log {
-    param ([string]$message)
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    "$timestamp - $message" | Out-File -Append -FilePath $logPath
-}
+#function Write-Log {
+#    param ([string]$message)
+#    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+#    "$timestamp - $message" | Out-File -Append -FilePath $logPath
+#}
 
 # Funkcja do potwierdzenia nazwy pliku i importowania
 $buttonConfirm.Add_Click({
-    Write-Log "===== Rozpoczynanie importu systemu ====="
+    #Write-Log "===== Rozpoczynanie importu systemu ====="
 
     $fileName = $textBoxFileName.Text.Trim()
 
     # Pobranie indeksu wersji
     $index = $global:selectedVersion -replace " - .+", ""
-    Write-Log "Wybrany indeks systemu: $index"
+    #Write-Log "Wybrany indeks systemu: $index"
 
     if (-not $index) {
         [System.Windows.MessageBox]::Show("Nie można pobrać indeksu systemu!", "Błąd")
@@ -166,63 +170,63 @@ $buttonConfirm.Add_Click({
 
     # Montowanie ISO
     $isoPath = $textBoxISO.Text
-    Write-Log "Montowanie ISO: $isoPath"
+    #Write-Log "Montowanie ISO: $isoPath"
 
     try {
         $driveLetter = (Mount-DiskImage -ImagePath $isoPath -PassThru | Get-Volume).DriveLetter
         $wimPath = "$driveLetter`:\sources\install.wim"
-        Write-Log "Plik WIM: $wimPath"
+        #Write-Log "Plik WIM: $wimPath"
 
         if (-not (Test-Path $wimPath)) {
             throw "Nie znaleziono pliku install.wim w ISO!"
         }
     } catch {
         [System.Windows.MessageBox]::Show("Błąd montowania ISO lub brak install.wim!", "Błąd")
-        Write-Log "Błąd: $_"
+        #Write-Log "Błąd: $_"
         return
     }
 
     # Ścieżka do zapisu obrazu
-    $extractPath = "C:\Users\TheMr\Downloads\TEST\Operating Systems"
+    $extractPath = $OSFolderPath
     if (-not (Test-Path $extractPath)) {
         New-Item -ItemType Directory -Path $extractPath | Out-Null
-        Write-Log "Utworzono katalog: $extractPath"
+        #Write-Log "Utworzono katalog: $extractPath"
     }
 
     # Pełna ścieżka do tymczasowego pliku WIM
     $tempWim = "$extractPath\temp_$index.wim"
 
-    Write-Log "Eksportowanie obrazu DISM do tymczasowego pliku: $tempWim"
+    #Write-Log "Eksportowanie obrazu DISM do tymczasowego pliku: $tempWim"
 
     # Ekstrakcja obrazu
     try {
         dism /export-image /SourceImageFile:$wimPath /SourceIndex:$index /DestinationImageFile:$tempWim /Compress:max /CheckIntegrity
-        Write-Log "Eksport ukończony pomyślnie"
+        #Write-Log "Eksport ukończony pomyślnie"
     } catch {
         [System.Windows.MessageBox]::Show("Błąd podczas eksportowania obrazu!", "Błąd")
-        Write-Log "Błąd eksportowania: $_"
+        #Write-Log "Błąd eksportowania: $_"
         Dismount-DiskImage -ImagePath $isoPath
         return
     }
 
     # Odmontowanie ISO
     Dismount-DiskImage -ImagePath $isoPath
-    Write-Log "ISO odmontowane"
+    #Write-Log "ISO odmontowane"
 
     # Teraz zmiana nazwy pliku
-    Write-Log "Zmiana nazwy pliku na: $fileName"
+    #Write-Log "Zmiana nazwy pliku na: $fileName"
 
     # Sprawdzenie, czy nazwa pliku nie jest pusta
     if (-not $fileName) {
         [System.Windows.MessageBox]::Show("Nazwa pliku nie może być pusta!", "Błąd")
-        Write-Log "Błąd: Pusta nazwa pliku"
+        #Write-Log "Błąd: Pusta nazwa pliku"
         return
     }
 
     # Sprawdzenie, czy nazwa pliku zawiera niedozwolone znaki
     if ($fileName -match '[\\/:*?"<>|]') {
         [System.Windows.MessageBox]::Show("Nazwa pliku zawiera niedozwolone znaki!", "Błąd")
-        Write-Log "Błąd: Niedozwolone znaki w nazwie pliku"
+        #Write-Log "Błąd: Niedozwolone znaki w nazwie pliku"
         return
     }
 
@@ -238,7 +242,7 @@ $buttonConfirm.Add_Click({
     if (Test-Path $destinationWim) {
         $result = [System.Windows.MessageBox]::Show("Plik '$fileName' już istnieje. Czy chcesz go zastąpić?", "Potwierdzenie", "YesNo", "Warning")
         if ($result -ne "Yes") {
-            Write-Log "Użytkownik anulował nadpisanie pliku: $destinationWim"
+            #Write-Log "Użytkownik anulował nadpisanie pliku: $destinationWim"
             return
         }
     }
@@ -246,15 +250,15 @@ $buttonConfirm.Add_Click({
     # Przeniesienie pliku do nowej nazwy
     try {
         Move-Item -Path $tempWim -Destination $destinationWim -Force
-        Write-Log "Zmieniono nazwę pliku na: $destinationWim"
+        #Write-Log "Zmieniono nazwę pliku na: $destinationWim"
     } catch {
         [System.Windows.MessageBox]::Show("Błąd podczas zmiany nazwy pliku!", "Błąd")
-        Write-Log "Błąd zmiany nazwy: $_"
+        #Write-Log "Błąd zmiany nazwy: $_"
         return
     }
 
     # Zapisanie wyboru do pliku XML
-    $xmlPath = "C:\Users\TheMr\Downloads\TEST\os_choices.xml"
+    $xmlPath = $xmlOSFilePath
     if (-not (Test-Path $xmlPath)) {
         $xml = New-Object System.Xml.XmlDocument
         $root = $xml.CreateElement("OSChoices")
@@ -272,7 +276,7 @@ $buttonConfirm.Add_Click({
     $xml.Save($xmlPath)
 
     [System.Windows.MessageBox]::Show("Wersja systemu została zaimportowana i zapisana jako '$fileName'!", "Sukces")
-    Write-Log "Import ukończony sukcesem"
+    #Write-Log "Import ukończony sukcesem"
     $window.Close()
 })
 
