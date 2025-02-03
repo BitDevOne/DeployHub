@@ -153,8 +153,12 @@ $WingetApplicationsPath = "$PSScriptRoot\Config\Applications\Winget"
 # Function to refresh the Winget applications list
 function Refresh_WingetApplicationsList {
     $WingetApplicationsList.Items.Clear()
-    Get-ChildItem -Path $WingetApplicationsPath -File -Filter "*.xml" | ForEach-Object {
-        $WingetApplicationsList.Items.Add($_.BaseName)
+    if (Test-Path "$WingetApplicationsPath\ApplicationsWinget.xml") {
+        $xml = New-Object System.Xml.XmlDocument
+        $xml.Load("$WingetApplicationsPath\ApplicationsWinget.xml")
+        $xml.SelectNodes("//Application") | ForEach-Object {
+            $WingetApplicationsList.Items.Add($_.GetAttribute("Name"))
+        }
     }
 }
 
@@ -167,11 +171,16 @@ $WingetAddButton.Add_Click({
 # "Remove" button event handler for Winget
 $WingetRemoveButton.Add_Click({
     if ($WingetApplicationsList.SelectedIndex -ne -1) {
-        $SelectedFolder = $WingetApplicationsList.SelectedItem.ToString()
-        $FolderPath = Join-Path -Path $WingetApplicationsPath -ChildPath "$SelectedFolder.xml"
-        if (Test-Path $FolderPath) {
-            Remove-Item -Path $FolderPath -Recurse -Force
-            Refresh_WingetApplicationsList
+        $SelectedApp = $WingetApplicationsList.SelectedItem.ToString()
+        if (Test-Path "$WingetApplicationsPath\ApplicationsWinget.xml") {
+            $xml = New-Object System.Xml.XmlDocument
+            $xml.Load("$WingetApplicationsPath\ApplicationsWinget.xml")
+            $appNode = $xml.SelectSingleNode("//Application[@Name='$SelectedApp']")
+            if ($appNode) {
+                $xml.DocumentElement.RemoveChild($appNode)
+                $xml.Save("$WingetApplicationsPath\ApplicationsWinget.xml")
+                Refresh_WingetApplicationsList
+            }
         }
     }
 })
@@ -185,8 +194,12 @@ $ChocoApplicationsPath = "$PSScriptRoot\Config\Applications\Choco"
 # Function to refresh the Chocolatey applications list
 function Refresh_ChocoApplicationsList {
     $ChocoApplicationsList.Items.Clear()
-    Get-ChildItem -Path $ChocoApplicationsPath -File -Filter "*.xml" | ForEach-Object {
-        $ChocoApplicationsList.Items.Add($_.BaseName)
+    if (Test-Path "$ChocoApplicationsPath\ApplicationsChoco.xml") {
+        $xml = New-Object System.Xml.XmlDocument
+        $xml.Load("$ChocoApplicationsPath\ApplicationsChoco.xml")
+        $xml.SelectNodes("//Application") | ForEach-Object {
+            $ChocoApplicationsList.Items.Add($_.GetAttribute("Name"))
+        }
     }
 }
 
@@ -199,11 +212,16 @@ $ChocoAddButton.Add_Click({
 # "Remove" button event handler for Chocolatey
 $ChocoRemoveButton.Add_Click({
     if ($ChocoApplicationsList.SelectedIndex -ne -1) {
-        $SelectedFolder = $ChocoApplicationsList.SelectedItem.ToString()
-        $FolderPath = Join-Path -Path $ChocoApplicationsPath -ChildPath "$SelectedFolder.xml"
-        if (Test-Path $FolderPath) {
-            Remove-Item -Path $FolderPath -Recurse -Force
-            Refresh_ChocoApplicationsList
+        $SelectedApp = $ChocoApplicationsList.SelectedItem.ToString()
+        if (Test-Path "$ChocoApplicationsPath\ApplicationsChoco.xml") {
+            $xml = New-Object System.Xml.XmlDocument
+            $xml.Load("$ChocoApplicationsPath\ApplicationsChoco.xml")
+            $appNode = $xml.SelectSingleNode("//Application[@Name='$SelectedApp']")
+            if ($appNode) {
+                $xml.DocumentElement.RemoveChild($appNode)
+                $xml.Save("$ChocoApplicationsPath\ApplicationsChoco.xml")
+                Refresh_ChocoApplicationsList
+            }
         }
     }
 })

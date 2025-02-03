@@ -87,25 +87,29 @@ if ($null -eq $selection) {
 }
 
 # Path to XML file
-$outputPath = "$FolderPath\$($selection.Name).xml"
+$outputPath = "$FolderPath\ApplicationsChoco.xml"
 
-# Check if the XML file already exists
+# Load or create XML document
 if (Test-Path $outputPath) {
+    $xml = New-Object System.Xml.XmlDocument
+    $xml.Load($outputPath)
+} else {
+    $xml = New-Object System.Xml.XmlDocument
+    $root = $xml.CreateElement("Applications")
+    $xml.AppendChild($root)
+}
+
+# Check if the application already exists
+$existingApp = $xml.SelectSingleNode("//Application[@Id='$($selection.Name)']")
+if ($existingApp) {
     [System.Windows.MessageBox]::Show("The application $($selection.Name) has already been added", "Information", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
 } else {
-    # Create a new XML document
-    $xml = New-Object System.Xml.XmlDocument
-    $root = $xml.CreateElement("Application")
-    $xml.AppendChild($root) | Out-Null
-
-    $nameNode = $xml.CreateElement("Name")
-    $nameNode.InnerText = $selection.Name
-    $root.AppendChild($nameNode) | Out-Null
-
-    $versionNode = $xml.CreateElement("Version")
-    $versionNode.InnerText = $selection.Version
-    $root.AppendChild($versionNode) | Out-Null
-
+    # Create a new application entry
+    $appElement = $xml.CreateElement("Application")
+    $appElement.SetAttribute("Name", $selection.Name)
+    $appElement.SetAttribute("Version", $selection.Version)
+    $xml.DocumentElement.AppendChild($appElement)
+    
     # Save XML file
     try {
         $xml.Save($outputPath)
