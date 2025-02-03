@@ -1,6 +1,7 @@
 param (
     [string]$FolderPath,       # Ścieżka do folderu z XML
-    [string]$XmlFilePath       # Pełna ścieżka do pliku XML
+    [string]$XmlFilePath,       # Pełna ścieżka do pliku XML
+    [string]$OsChoicesXmlFilePath # Pełna ścieżka do drugiego pliku XML (z OSChoices)
 )
 
 Add-Type -AssemblyName PresentationFramework, System.Xml.Linq
@@ -100,14 +101,39 @@ if ($osVersions.Count -eq 0) {
     $osVersions = @("Windows 10", "Windows 11", "Windows Server 2019")  # Domyślne wartości
 }
 
-# Wypełnienie dropdowna OS
-$osVersionDropdown.Items.Clear()
-$osVersions | ForEach-Object { $osVersionDropdown.Items.Add($_) }
+if (-not (Test-Path $OsChoicesXmlFilePath)) {
+    [System.Windows.MessageBox]::Show("Nie znaleziono pliku XML: $OsChoicesXmlFilePath", "Błąd", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error)
+    exit
+}
 
-# Ustawienie domyślnej wartości jako pierwsza z listy
+# Wczytaj plik XML
+$osChoicesXml = [xml](Get-Content $OsChoicesXmlFilePath)
+
+# Pobierz nazwy systemów operacyjnych z OSChoices XML jako LISTĘ
+$osChoices = @()
+if ($osChoicesXml.OSChoices.OS) {
+    $osChoicesXml.OSChoices.OS | ForEach-Object { $osChoices += $_.Name }
+}
+
+# Połącz OSVersions z pierwszego XML i OSChoices z drugiego XML, usuwając duplikaty
+$allOsVersions = @($osVersions) + $osChoices | Sort-Object -Unique
+
+# Wyczyść dropdown
+$osVersionDropdown.Items.Clear()
+
+# DEBUG: Sprawdź, co faktycznie mamy w allOsVersions
+Write-Host "OS Versions: $allOsVersions"
+
+# Wypełnienie listy rozwijanej OS
+foreach ($os in $allOsVersions) {
+    $osVersionDropdown.Items.Add($os)
+}
+
+# Ustaw domyślną wartość jako pierwsza z listy
 if ($osVersionDropdown.Items.Count -gt 0) {
     $osVersionDropdown.SelectedItem = $osVersionDropdown.Items[0]
 }
+
 
 # Struktura danych do przechowywania hierarchii komend
 $rootItems = New-Object System.Collections.ObjectModel.ObservableCollection[PSCustomObject]
@@ -158,6 +184,13 @@ $saveAllButton.Add_Click({
             $commandElement = $xmlContent.CreateElement("Command")
             $commandElement.InnerText = $item.Command
             $stepElement.AppendChild($commandElement) | Out-Null
+        }
+
+        # 🔹 Poprawka: dodaj obsługę zapisu FileName dla Install OS (Apply System Image)
+        if ($item.Type -eq "Apply System Image") {
+            $fileNameElement = $xmlContent.CreateElement("FileName")
+            $fileNameElement.InnerText = $item.OSVersion  # Używamy OSVersion jako FileName
+            $stepElement.AppendChild($fileNameElement) | Out-Null
         }
 
         $rootElement.AppendChild($stepElement) | Out-Null
@@ -303,7 +336,7 @@ $saveButton.Add_Click({
         if ($selectedItem.Type -eq "Run Command Line" -or $selectedItem.Type -eq "Run PowerShell Script") {
             $selectedItem.Command = $commandContent.Text
         } elseif ($selectedItem.Type -eq "Apply System Image") {
-            $selectedItem.OSVersion = $osVersionDropdown.SelectedItem.Content
+            $selectedItem.OSVersion = $osVersionDropdown.SelectedItem
         } elseif ($selectedItem.Type -eq "Install Application") {
             $selectedItem.Application = $applicationDropdown.SelectedItem.Content
         }

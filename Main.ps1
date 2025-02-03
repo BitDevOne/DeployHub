@@ -122,7 +122,7 @@ $EditButton.Add_Click({
         $XmlFilePath = Join-Path -Path $FolderPath -ChildPath "TaskSequences.xml"
 
         if (Test-Path $XmlFilePath) {
-            & "$PSScriptRoot\Scripts\EditTaskSequence.ps1" -FolderPath $FolderPath -XmlFilePath $XmlFilePath
+            & "$PSScriptRoot\Scripts\EditTaskSequence.ps1" -FolderPath $FolderPath -XmlFilePath $XmlFilePath -OsChoicesXmlFilePath $xmlOSFilePath
         } else {
             [System.Windows.MessageBox]::Show("The file TaskSequences.xml does not exist in the selected folder.", "Error", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error)
         }
