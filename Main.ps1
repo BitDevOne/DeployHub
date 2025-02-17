@@ -142,6 +142,13 @@ $ChocoApplicationsList = $WindowMain.FindName("ChocoApplicationsList")
 $ImportedSystemList = $WindowMain.FindName("ImportedSystemList")
 $ImportOperatingSystem = $WindowMain.FindName("ImportOperatingSystem")
 $RemoveOperatingSystem = $WindowMain.FindName("RemoveOperatingSystem")
+$ComputerDropdown = $WindowMain.FindName("ComputerDropdown")
+$ComputerNameBox = $WindowMain.FindName("ComputerNameBox")
+$ServiceTagBox = $WindowMain.FindName("ServiceTagBox")
+$TaskDropdown = $WindowMain.FindName("TaskDropdown")
+$TaskSequencesList = $WindowMain.FindName("TaskSequencesList")
+$TaskSequenceStepsBox = $WindowMain.FindName("TaskSequenceStepsBox")
+$StartButton = $WindowMain.FindName("StartButton")
 
 # Task Sequences folder location
 $TaskSequencesPath = "$PSScriptRoot\TaskSequences"
@@ -357,6 +364,180 @@ $RemoveOperatingSystem.Add_Click({
 
 # Initial population of OS list
 Refresh_OSList
+
+# Monitoring Tab
+
+# Directory Path where each computer has its own folder
+$ComputersDirectoryPath = "$PSScriptRoot\Computers"
+$TaskSequencesConfigPath = "$PSScriptRoot\Config\TaskSequences.xml"
+
+# Function to load computer list from individual XML files in directories
+function Load_ComputerList {
+    $ComputerDropdown.Items.Clear()
+    
+    if (Test-Path $ComputersDirectoryPath) {
+        Get-ChildItem -Path $ComputersDirectoryPath -Directory -Recurse | ForEach-Object {
+            $computerXmlPath = "$($_.FullName)\ComputerConfiguration.xml"
+            if (Test-Path $computerXmlPath) {
+                [xml]$xmlData = Get-Content $computerXmlPath
+                $xmlData.ComputerConfiguration.Computer | ForEach-Object {
+                    $ComputerDropdown.Items.Add($_.ComputerName)
+                }
+            }
+        }
+    }
+}
+
+# Tworzymy globalny słownik do przechowywania powiązań (ComputerName -> ServiceTag)
+$ComputerMapping = @{}
+
+# Function to load task sequences from XML
+function Load_ComputerList {
+    $ComputerDropdown.Items.Clear()
+    $ComputerMapping.Clear()
+
+    if (Test-Path $ComputersDirectoryPath) {
+        Get-ChildItem -Path $ComputersDirectoryPath -Directory | ForEach-Object {
+            $computerXmlPath = "$($_.FullName)\ComputerConfiguration.xml"
+
+            if (Test-Path $computerXmlPath) {
+                [xml]$xmlData = Get-Content -Path $computerXmlPath -Raw
+
+                if ($xmlData.ComputerConfiguration -and $xmlData.ComputerConfiguration.Computer) {
+                    $xmlData.ComputerConfiguration.Computer | ForEach-Object {
+                        # Dodajemy do listy tylko ComputerName
+                        $ComputerDropdown.Items.Add($_.ComputerName)
+
+                        # Przechowujemy Service Tag dla tego komputera w słowniku
+                        $ComputerMapping[$_.ComputerName] = $_.ServisTag
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+
+# Function to update UI when a computer is selected
+$ComputerDropdown.Add_SelectionChanged({
+    $SelectedComputer = $ComputerDropdown.SelectedItem
+    if (-not $SelectedComputer) { return }
+
+    # Pobieramy Service Tag z naszego słownika
+    if ($ComputerMapping.ContainsKey($SelectedComputer)) {
+        $SelectedServiceTag = $ComputerMapping[$SelectedComputer]
+    } else {
+        Write-Host "⚠ Nie znaleziono Service Tag dla komputera: $SelectedComputer" -ForegroundColor Yellow
+        return
+    }
+
+    Write-Host "Wybrano komputer: $SelectedComputer, Service Tag: $SelectedServiceTag" -ForegroundColor Cyan
+
+    # Budujemy ścieżkę do pliku XML na podstawie Service Tag
+    $computerXmlPath = Join-Path -Path $ComputersDirectoryPath -ChildPath "$SelectedServiceTag\ComputerConfiguration.xml"
+
+    if (Test-Path $computerXmlPath) {
+        try {
+            $xmlContent = Get-Content -Path $computerXmlPath -Raw
+            [xml]$xmlData = $xmlContent
+
+            $SelectedNode = $xmlData.ComputerConfiguration.Computer
+
+            if ($SelectedNode) {
+                # Wypełniamy pola formularza (z obsługą null)
+                if ($ComputerNameBox) { $ComputerNameBox.Text = $SelectedNode.ComputerName }
+                if ($ServiceTagBox) { $ServiceTagBox.Text = $SelectedNode.ServisTag }
+                if ($TaskDropdown -and $SelectedNode.Task) { $TaskDropdown.SelectedItem = $SelectedNode.Task }
+                if ($TaskSequencesList -and $SelectedNode.TaskSequences) { $TaskSequencesList.SelectedItem = $SelectedNode.TaskSequences }
+                if ($TaskSequenceStepsBox -and $SelectedNode.TaskSequencesStep) { $TaskSequenceStepsBox.Text = $SelectedNode.TaskSequencesStep }
+
+                Write-Host "✔ Formularz wypełniony poprawnie!" -ForegroundColor Green
+            } else {
+                Write-Host "⚠ Nie znaleziono danych w XML dla: $SelectedServiceTag" -ForegroundColor Red
+            }
+        } catch {
+            Write-Host "❌ Błąd parsowania XML: $_" -ForegroundColor Red
+        }
+    } else {
+        Write-Host "❌ Plik XML nie istnieje: $computerXmlPath" -ForegroundColor Red
+    }
+})
+
+# Start button event handler
+$StartButton.Add_Click({
+    $SelectedComputer = $ComputerDropdown.SelectedItem
+    $SelectedTask = $TaskDropdown.SelectedItem
+    $SelectedTaskSequence = $TaskSequencesList.SelectedItem
+    
+    if (-not $SelectedComputer -or -not $SelectedTask -or -not $SelectedTaskSequence) {
+        [System.Windows.MessageBox]::Show("Please select all required fields before starting.", "Error", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error)
+        return
+    }
+    
+    # Save selected options to XML
+    $computerXmlPath = "$ComputersDirectoryPath\$SelectedComputer\ComputerConfiguration.xml"
+    if (Test-Path $computerXmlPath) {
+        [xml]$xmlData = Get-Content $computerXmlPath
+        $SelectedNode = $xmlData.ComputerConfiguration.Computer | Where-Object { $_.ComputerName -eq $SelectedComputer }
+        
+        if ($SelectedNode) {
+            $SelectedNode.ComputerName = $ComputerNameBox.Text
+            $SelectedNode.Task = $SelectedTask
+            $SelectedNode.TaskSequences = $SelectedTaskSequence
+            $xmlData.Save($computerXmlPath)
+        }
+    }
+    
+    [System.Windows.MessageBox]::Show("Starting task: $SelectedTask for computer: $SelectedComputer with sequence: $SelectedTaskSequence", "Information", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+})
+
+# Function to monitor directory for new or changed XML files every 30 seconds
+function Monitor_XMLChanges {
+    $lastModified = Get-ChildItem -Path $ComputersDirectoryPath -Recurse -File | Sort-Object LastWriteTime -Descending | Select-Object -First 1 | Select-Object -ExpandProperty LastWriteTime
+    while ($true) {
+        Start-Sleep -Seconds 30
+        $currentModified = Get-ChildItem -Path $ComputersDirectoryPath -Recurse -File | Sort-Object LastWriteTime -Descending | Select-Object -First 1 | Select-Object -ExpandProperty LastWriteTime
+        if ($currentModified -ne $lastModified) {
+            $lastModified = $currentModified
+            Load_ComputerList
+        }
+    }
+}
+
+# Check if monitoring job is already running
+$jobName = "MonitorXMLJob"
+$existingJob = Get-Job -Name $jobName -ErrorAction SilentlyContinue
+if (-not $existingJob) {
+    # Start monitoring XML file in the background with job name if it doesn't exist
+    Start-Job -Name $jobName -ScriptBlock {
+        param($path)
+        function Monitor_XMLChanges {
+            $lastModified = Get-ChildItem -Path $path -Recurse -File | Sort-Object LastWriteTime -Descending | Select-Object -First 1 | Select-Object -ExpandProperty LastWriteTime
+            while ($true) {
+                Start-Sleep -Seconds 30
+                $currentModified = Get-ChildItem -Path $path -Recurse -File | Sort-Object LastWriteTime -Descending | Select-Object -First 1 | Select-Object -ExpandProperty LastWriteTime
+                if ($currentModified -ne $lastModified) {
+                    $lastModified = $currentModified
+                    Load_ComputerList
+                }
+            }
+        }
+        Monitor_XMLChanges
+    } -ArgumentList $ComputersDirectoryPath
+}
+
+# Stop jobs when the script exits
+$global:scriptExitHandler = {
+    Get-Job -Name $jobName -ErrorAction SilentlyContinue | Stop-Job -Force
+    Get-Job -Name $jobName -ErrorAction SilentlyContinue | Remove-Job -Force
+}
+
+Register-EngineEvent -SourceIdentifier "PowerShell.Exiting" -Action $scriptExitHandler
+
+# Initialize lists
+Load_ComputerList
+Load_TaskSequencesList
 
 # Display the main window
 $WindowMain.ShowDialog()
