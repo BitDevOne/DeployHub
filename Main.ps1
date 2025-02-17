@@ -81,35 +81,39 @@ $XamlMain = @"
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
+                <!-- Computer Name -->
+                <Label Content="Computer Name:" Grid.Row="0" Grid.Column="0" Margin="5"/>
+                <TextBox x:Name="ComputerNameBox" Grid.Row="0" Grid.Column="1" Width="250" Margin="5"/>
+
                 <!-- Service Tag -->
-                <Label Content="Service Tag:" Grid.Row="0" Grid.Column="0" Margin="5"/>
-                <TextBox x:Name="ServiceTagBox" Grid.Row="0" Grid.Column="1" Width="250" Margin="5" IsReadOnly="True"/>
+                <Label Content="Service Tag:" Grid.Row="1" Grid.Column="0" Margin="5"/>
+                <TextBox x:Name="ServiceTagBox" Grid.Row="1" Grid.Column="1" Width="250" Margin="5" IsReadOnly="True"/>
 
                 <!-- Task Selection -->
-                <Label Content="Select Task:" Grid.Row="1" Grid.Column="0" Margin="5"/>
-                <ComboBox x:Name="TaskDropdown" Grid.Row="1" Grid.Column="1" Width="250" Margin="5"/>
+                <Label Content="Select Task:" Grid.Row="2" Grid.Column="0" Margin="5"/>
+                <ComboBox x:Name="TaskDropdown" Grid.Row="2" Grid.Column="1" Width="250" Margin="5"/>
 
                 <!-- Task Sequences -->
-                <Label Content="Task Sequences:" Grid.Row="2" Grid.Column="0" Margin="5"/>
-                <ComboBox x:Name="TaskSequencesDropdown" Grid.Row="2" Grid.Column="1" Width="250" Margin="5"/>
+                <Label Content="Task Sequences:" Grid.Row="3" Grid.Column="0" Margin="5"/>
+                <ComboBox x:Name="TaskSequencesDropdown" Grid.Row="3" Grid.Column="1" Width="250" Margin="5"/>
 
                 <!-- Task Sequence Steps -->
-                <Label Content="Task Sequence Steps:" Grid.Row="3" Grid.Column="0" Margin="5"/>
-                <TextBox x:Name="TaskSequenceStepsBox" Grid.Row="3" Grid.Column="1" Width="250" Height="50" Margin="5" IsReadOnly="True"/>
+                <Label Content="Task Sequence Steps:" Grid.Row="4" Grid.Column="0" Margin="5"/>
+                <TextBox x:Name="TaskSequenceStepsBox" Grid.Row="4" Grid.Column="1" Width="250" Margin="5" IsReadOnly="True"/>
 
                 <!-- Save Button -->
-                <Button x:Name="StartButton" Content="Start" Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" Width="100" Margin="5" HorizontalAlignment="Center"/>
+                <Button x:Name="StartButton" Content="Start" Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2" Width="100" Margin="5" HorizontalAlignment="Center"/>
             </Grid>
         </StackPanel>
     </Grid>
 </TabItem>
-
             <TabItem Header="Settings">
                 <Grid>
                     
