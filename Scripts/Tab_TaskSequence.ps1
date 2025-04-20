@@ -38,10 +38,10 @@ function Load_SftpConfig {
     if (Test-Path $SftpConfigPath) {
         try {
             [xml]$config = Get-Content $SftpConfigPath
-            $SftpServerIp.Text = $config.Configuration.SftpSettings.ServerIP
-            $SftpPort.Text     = $config.Configuration.SftpSettings.Port
-            $SftpUsername.Text = $config.Configuration.SftpSettings.Username
-            $SftpPassword.Text = $config.Configuration.SftpSettings.Password
+            $SftpServerIp   = $config.Configuration.SftpSettings.ServerIP
+            $SftpPort       = [int]$config.Configuration.SftpSettings.Port
+            $SftpUsername   = $config.Configuration.SftpSettings.Username
+            $SftpPassword   = $config.Configuration.SftpSettings.Password
         }
         catch {
             Write-Host "❌ Error loading SFTP configuration: $_" -ForegroundColor Red
@@ -49,7 +49,12 @@ function Load_SftpConfig {
     }
 }
 
-$Cred = New-Object System.Management.Automation.PSCredential($SftpUsername, $SftpPassword)
+# Load SFTP configuration
+Load_SftpConfig
+
+# --- Ustawienia SFTP ---
+$securePass = ConvertTo-SecureString $SftpPassword -AsPlainText -Force
+$Cred = New-Object System.Management.Automation.PSCredential($SftpUsername, $securePass)
 
 #Connection to Sftp Server
 $session = New-SFTPSession -ComputerName $SftpServerIp `
@@ -57,7 +62,29 @@ $session = New-SFTPSession -ComputerName $SftpServerIp `
                            -Port         $SftpPort `
                            -ErrorAction  Stop
 
+# Path to the task sequence folder 
+$remotePath = '/TaskSequences'
 
+# --- Sprawdź, czy katalog istnieje ---
+try {
+    # próbujemy uzyskać listing katalogu
+    Get-SFTPChildItem -SessionId $session.SessionId `
+                      -Path      $remotePath `
+                      -ErrorAction Stop | Out-Null
+
+    Write-Host "Katalog '$remotePath' już istnieje na serwerze SFTP."
+}
+catch {
+    # jeśli wyrzuci błąd, to katalog nie istnieje – tworzymy go
+    Write-Host "Tworzę katalog '$remotePath' na serwerze SFTP..."
+    New-SFTPItem -SessionId $session.SessionId `
+                 -Path      $remotePath `
+                 -ItemType  Directory
+    Write-Host "Katalog utworzony."
+}
+
+# --- Zakończenie sesji ---
+Remove-SFTPSession -SessionId $session.SessionId
 
 # Zwrócenie obiektu TabItem do Start.ps1
 return $TabItem
