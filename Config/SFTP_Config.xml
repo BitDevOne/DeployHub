@@ -1,0 +1,9 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<Configuration>
+  <SftpSettings>
+    <ServerIP>192.168.1.200</ServerIP>
+    <Port>2022</Port>
+    <Username>DeployHub</Username>
+    <Password>Start123!</Password>
+  </SftpSettings>
+</Configuration>
