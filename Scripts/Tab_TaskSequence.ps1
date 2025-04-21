@@ -1,4 +1,4 @@
-# Definicja TabItem z deklaracją xmlns:x
+﻿# Definicja TabItem z deklaracją xmlns:x
 $XamlTab = @"
 <TabItem xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
          xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -34,33 +34,18 @@ $ConfigPath      = ".\Config"
 $SftpConfigPath  = Join-Path -Path $ConfigPath -ChildPath "SFTP_Config.xml"
 
 # Function to load SFTP configuration from XML
-function Load_SftpConfig {
-    if (Test-Path $SftpConfigPath) {
-        try {
-            [xml]$config = Get-Content $SftpConfigPath
-            $SftpServerIp   = $config.Configuration.SftpSettings.ServerIP
-            $SftpPort       = [int]$config.Configuration.SftpSettings.Port
-            $SftpUsername   = $config.Configuration.SftpSettings.Username
-            $SftpPassword   = $config.Configuration.SftpSettings.Password
-        }
-        catch {
-            Write-Host "❌ Error loading SFTP configuration: $_" -ForegroundColor Red
-        }
-    }
-}
-
-# Load SFTP configuration
-Load_SftpConfig
+[xml]$config = Get-Content $SftpConfigPath -Raw
+$SftpServerIp   = $config.Configuration.SftpSettings.ServerIP
+$SftpPort       = $config.Configuration.SftpSettings.Port
+$SftpUsername   = $config.Configuration.SftpSettings.Username
+$SftpPassword   = $config.Configuration.SftpSettings.Password
 
 # --- Ustawienia SFTP ---
 $securePass = ConvertTo-SecureString $SftpPassword -AsPlainText -Force
 $Cred = New-Object System.Management.Automation.PSCredential($SftpUsername, $securePass)
 
 #Connection to Sftp Server
-$session = New-SFTPSession -ComputerName $SftpServerIp `
-                           -Credential   $Cred `
-                           -Port         $SftpPort `
-                           -ErrorAction  Stop
+$session = New-SFTPSession -ComputerName $SftpServerIp -Credential $Cred -Port $SftpPort -AcceptKey
 
 # Path to the task sequence folder 
 $remotePath = '/TaskSequences'
