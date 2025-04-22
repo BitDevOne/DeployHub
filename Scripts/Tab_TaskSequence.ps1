@@ -12,7 +12,7 @@ $TaskSequenceList = $TabItem.FindName('TaskSequenceList')
 $ConfigPath      = ".\Config"
 $SftpConfigPath  = Join-Path -Path $ConfigPath -ChildPath "SFTP_Config.xml"
 
-# Function to load SFTP configuration from XML
+# Load SFTP configuration from XML
 [xml]$config = Get-Content $SftpConfigPath -Raw
 $SftpServerIp   = $config.Configuration.SftpSettings.ServerIP
 $SftpPort       = $config.Configuration.SftpSettings.Port
@@ -47,5 +47,35 @@ catch {
     Write-Host "Katalog utworzony."
 }
 
+# Function to refresh the folder list
+function Refresh_TaskSequenceList {
+    # czyścimy listę w UI
+    $TaskSequenceList.Items.Clear()
+
+    try {
+        # pobieramy wpisy zdalne i filtrujemy tylko katalogi
+        $dirs = Get-SFTPChildItem -SessionId $session.SessionId `
+                                  -Path      $remotePath `
+                                  -ErrorAction Stop |
+                Where-Object { $_.IsDirectory }
+
+        foreach ($d in $dirs) {
+            $TaskSequenceList.Items.Add($d.Name)
+        }
+    }
+    catch {
+        Write-Warning "Nie udało się pobrać listy z '$remotePath' na serwerze SFTP: $_"
+    }
+}
+
+# "Add New" button event handler
+$AddButton.Add_Click({
+    & "$PSScriptRoot\AddTaskSequence.ps1" -TaskSequencesPath $TaskSequencesPath -OSxmlFilePath $xmlOSFilePath
+    Refresh_TaskSequenceList
+})
+
+# Initial population of the list
+Refresh_TaskSequenceList
+
 # --- Zakończenie sesji ---
-Remove-SFTPSession -SessionId $session.SessionId
+#Remove-SFTPSession -SessionId $session.SessionId
