@@ -1,38 +1,6 @@
-# Definition of the TabItem with xmlns declarations
-$XamlTab = @"
-<TabItem xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-         Header="Settings">
-    <Grid Margin="10">
-        <GroupBox Header="SFTP Configuration">
-            <StackPanel Margin="10">
-                <Label Content="SFTP Server IP:" FontWeight="Bold"/>
-                <TextBox x:Name="SftpServerIp" Margin="0,0,0,10"/>
-                
-                <Label Content="SFTP Port:" FontWeight="Bold"/>
-                <TextBox x:Name="SftpPort" Margin="0,0,0,10" Text="22"/>
-                
-                <Label Content="SFTP Username:" FontWeight="Bold"/>
-                <TextBox x:Name="SftpUsername" Margin="0,0,0,10"/>
-                
-                <Label Content="SFTP Password:" FontWeight="Bold"/>
-                <PasswordBox x:Name="SftpPassword" Margin="0,0,0,10"/>
-                
-                <Button Content="Save SFTP Settings" 
-                        x:Name="SaveSftpSettings" 
-                        HorizontalAlignment="Right" 
-                        Margin="0,10,0,0" 
-                        Padding="20,5"/>
-            </StackPanel>
-        </GroupBox>
-    </Grid>
-</TabItem>
-"@
-
-# Parse the XAML and create the TabItem object
-[xml]$XmlTab = $XamlTab
-$ReaderTab = New-Object System.Xml.XmlNodeReader $XmlTab
-$TabItem = [Windows.Markup.XamlReader]::Load($ReaderTab)
+param(
+    [System.Windows.Controls.TabItem]$TabItem
+)
 
 # Load controls from the XAML
 $SftpServerIp    = $TabItem.FindName('SftpServerIp')
@@ -109,6 +77,3 @@ $SaveSftpSettings.Add_Click({
 
 # Load the configuration when the tab is first shown
 Load_SftpConfig
-
-# Return the constructed TabItem to the host script
-return $TabItem

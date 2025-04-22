@@ -1,63 +1,31 @@
 Add-Type -AssemblyName PresentationFramework
 
-# Main window XAML
-$XamlMain = @"
-<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Deploy HUB" Height="600" Width="800"
-        Background="#F0F0F0">
-    <Window.Resources>
-        <Style TargetType="Button">
-            <Setter Property="Padding" Value="10,5"/>
-            <Setter Property="Margin" Value="5"/>
-            <Setter Property="MinWidth" Value="120"/>
-            <Setter Property="Background" Value="#007ACC"/>
-            <Setter Property="Foreground" Value="White"/>
-        </Style>
-        <Style TargetType="ListBox">
-            <Setter Property="Margin" Value="5"/>
-            <Setter Property="Background" Value="White"/>
-            <Setter Property="BorderThickness" Value="1"/>
-        </Style>
-        <Style TargetType="Label">
-            <Setter Property="Margin" Value="5"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
-        </Style>
-        <Style TargetType="TabItem">
-            <Setter Property="Padding" Value="10,5"/>
-        </Style>
-    </Window.Resources>
-    <TabControl x:Name="MainTabControl"/>
-</Window>
-"@
+# 1) Wczytaj główny XAML okna
+$uiXamlPath   = Join-Path $PSScriptRoot 'UI.xml'
+[xml]$xmlMain = Get-Content $uiXamlPath -Raw
+$readerMain   = New-Object System.Xml.XmlNodeReader $xmlMain
+$windowMain   = [Windows.Markup.XamlReader]::Load($readerMain)
 
-# Parse the XAML
-[xml]$XmlMain   = $XamlMain
-$ReaderMain     = New-Object System.Xml.XmlNodeReader $XmlMain
-$WindowMain     = [Windows.Markup.XamlReader]::Load($ReaderMain)
-
-# Folder where your Tab_*.ps1 scripts live
-$folder = Join-Path $PSScriptRoot 'Scripts'
-
-# Define the exact order of your tab scripts
-$order = @(
-    'Tab_TaskSequence.ps1'
-    'Tab_Settings.ps1'
+# 2) Lista par: XAML i odpowiadający mu skrypt code‑behind
+$tabs = @(
+    @{ Xaml='Scripts\Tab_TaskSequence.xml'; Script='Scripts\Tab_TaskSequence.ps1' }
+    @{ Xaml='Scripts\Tab_Settings.xml';     Script='Scripts\Tab_Settings.ps1' }
 )
 
-# Load each tab in the specified order
-foreach ($fileName in $order) {
-    $path = Join-Path $folder $fileName
-    if (Test-Path $path) {
-        # Dot-source the script to get back a TabItem object
-        $tab = . $path
-        # Add it to the TabControl
-        $WindowMain.FindName('MainTabControl').Items.Add($tab)
-    }
-    else {
-        Write-Warning "Tab script not found: $path"
-    }
+foreach ($t in $tabs) {
+    # 2a) wczytaj XAML zakładki
+    $xamlPath = Join-Path $PSScriptRoot $t.Xaml
+    [xml]$xmlTab = Get-Content $xamlPath -Raw
+    $readerTab  = New-Object System.Xml.XmlNodeReader $xmlTab
+    $tabItem    = [Windows.Markup.XamlReader]::Load($readerTab)
+
+    # 2b) uruchom skrypt, przekazując wczytany TabItem
+    #    (skrypt nie powinien niczego zwracać na wyjście poza ewentualnym Out-Null)
+    . (Join-Path $PSScriptRoot $t.Script) -TabItem $tabItem
+
+    # 2c) dodaj do TabControl
+    $windowMain.FindName('MainTabControl').Items.Add($tabItem)
 }
 
-# Show the window
-$WindowMain.ShowDialog()
+# 3) wyświetl okno
+$windowMain.ShowDialog()

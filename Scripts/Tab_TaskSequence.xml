@@ -1,0 +1,16 @@
+<TabItem xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+         Header="Task Sequences">
+        <Grid Margin="10">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+                <StackPanel Orientation="Horizontal" Grid.Row="0">
+                    <Button x:Name="AddButton" Content="Add New"/>
+                    <Button x:Name="EditButton" Content="Edit"/>
+                    <Button x:Name="RemoveButton" Content="Remove"/>
+                </StackPanel>
+            <ListBox x:Name="TaskSequenceList" Grid.Row="1" Height="400"/>
+        </Grid>
+</TabItem>
