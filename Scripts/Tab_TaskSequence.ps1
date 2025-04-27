@@ -76,6 +76,11 @@ $AddButton.Add_Click({
     $xmlOSFilePath = Join-Path -Path $localFolder -ChildPath $xmlFileName
 
     try {
+        # Jeśli plik lokalny istnieje, usuń go, żeby wymusić ponowne pobranie
+        if (Test-Path $xmlOSFilePath) {
+            Remove-Item $xmlOSFilePath -Force
+        }
+
         Get-SFTPItem -SessionId $session.SessionId `
                      -Path $osRemotePath `
                      -Destination $localFolder `
@@ -90,6 +95,7 @@ $AddButton.Add_Click({
     & "$PSScriptRoot\AddTaskSequence.ps1" -TaskSequencesPath $remotePath -OSxmlFilePath $xmlOSFilePath
     Refresh_TaskSequenceList
 })
+
 
 
 # Initial population of the list
