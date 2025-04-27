@@ -70,9 +70,27 @@ function Refresh_TaskSequenceList {
 
 # "Add New" button event handler
 $AddButton.Add_Click({
+    $osRemotePath = "/Operating Systems/Operating_Systems.xml"
+    $xmlFileName = "Operating_Systems.xml"
+    $localFolder = $env:TEMP
+    $xmlOSFilePath = Join-Path -Path $localFolder -ChildPath $xmlFileName
+
+    try {
+        Get-SFTPItem -SessionId $session.SessionId `
+                     -Path $osRemotePath `
+                     -Destination $localFolder `
+                     -ErrorAction Stop
+        Write-Host "Plik Operating_Systems.xml pobrany z serwera SFTP do $xmlOSFilePath"
+    }
+    catch {
+        Write-Warning "Nie udało się pobrać pliku Operating_Systems.xml: $_"
+        return
+    }
+
     & "$PSScriptRoot\AddTaskSequence.ps1" -TaskSequencesPath $remotePath -OSxmlFilePath $xmlOSFilePath
     Refresh_TaskSequenceList
 })
+
 
 # Initial population of the list
 Refresh_TaskSequenceList
